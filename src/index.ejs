@@ -42,148 +42,273 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
             }
           ]
         },
-        "date" : "5 November, 2021"
+        "date" : "15 December, 2021"
       }
   </script>
   </d-front-matter>
 
   <d-title>
-    <h1>arXiv/viXra - The Data</h1>
-    <p>Diving in.</p>
+    <h1>arXiv/viXra - Baseline Models</h1>
+    <p>Random Forest and a Linear Model</p>
   </d-title>
 
   <d-article>
 
-<p>Naive bayes was 56%</p>
+    <h3>
+      Starting Simple
+    </h3>
 
-
-    <h3>Wading Through</h3>
-
-    <blockquote>
-      The first step to training a neural net is to not touch any neural net code at all and instead begin by thoroughly
-      inspecting your data.
-      This step is critical. I like to spend copious amount of time (measured in units of hours) scanning through
-      thousands of examples, understanding their distribution and looking for patterns.
-    </blockquote>
     <p>
-      This quote is from Andrej Karpaty's excellent post<d-footnote id="d-footnote-wrong-guesses">
-        Another sage piece of advice from the post: <em>don't be a hero.</em> Start simple and be conservative in your
-        rate of adding bells and whistles.
-      </d-footnote>
       <em>
-        <a target="_blank" rel="noopener noreferrer" href="https://arxiv.org">A Recipe for Training Neural Networks
-        </a>
-      </em>, and it is advice well-taken. Below, I summarize my results in applying this advice to the arXiv and viXra
-      datasets. I detail the gross properties of the sets,
-      their patterns and distinctions,
-      and the process of normalizing the text for the purposes of both feeding the data into ML models and preventing
-      accidental cheating by
-      including unwanted technical clues in the training examples. In particular, I provide a cautionary tale in which I
-      failed
-      at this final task and the tell-tale signs thereof.
+        <a target='_blank' rel='noopener noreferrer'
+          href='https://github.com/garrett361/arxiv-vixra-ml/tree/main/simple_baselines'>Note: The Jupyter/Colab
+          notebooks
+          relevant to this post can be found on my GitHub page.</a>
+      </em>
     </p>
 
-
-
-    <h3>Gross Properties</h3>
-
     <p>
-      There is far more data<d-footnote id='data'>
-        The arXiv dataset is <a target='_blank' rel='noopener noreferrer'
-          href='https://www.kaggle.com/Cornell-University/arxiv'>
-          publicly available on Kaggle.</a>
-        I wrote a small <d-code language='python'>python</d-code> web-scraper to collect the viXra data.
-      </d-footnote> for arXiv than viXra (the ratio of papers is 50:1) and the alignment of categories is not perfect.
-      That is, while the two repositories cover many of the same topics, such as
+      Start with some simple models, rather than a complicated one:
     </p>
     <ul>
       <li>
-        Number Theory
+        Such models provide a baseline for later comparison and can be surprisingly effective (as in the present case).
       </li>
       <li>
-        Condensed Matter
-      </li>
-      <li>
-        Data Structures and Algorithms
+        Simple models are often much easier to interpret. This can be useful for revealing issues in the data itself or
+        the cleaning process, in addition to the intrinsic appeal of interpretability.
       </li>
     </ul>
+
     <p>
-      there also exist categories that belong to arXiv or viXra alone:
-    </p>
-    <ul>
-      <li>
-        <a target='_blank' rel='noopener noreferrer' href='https://vixra.org/mind'>
-          Mind Science</a> (a sub-category of Biology) <em>(viXra only)</em>
-      </li>
-      <li>
-        <a target='_blank' rel='noopener noreferrer' href='https://arxiv.org/list/cs.DC/recent'>Distributed, Parallel,
-          and Cluster Computing</a> <em>(arXiv only)</em>
-      </li>
-      <li>
-        <a target='_blank' rel='noopener noreferrer' href='https://vixra.org/reli/'>Religion and Spiritualism</a>
-        <em>(viXra only)</em>
-      </li>
-    </ul>
-    <p>
-      This provides a natural sanity check on the final models, since we naturally expect them to have an easier time
-      classifying papers which
-      belong to a category present in only one of the two repositories.
+      Below I detail the results of applying a simple linear model and a Random Forest to one-hot encoded
+      (character-level)
+      arXiv/viXra title data.
     </p>
 
+    <h3>
+      Logistic Regression
+    </h3>
 
-    <h3>Patterns</h3>
+    <p>
+      The simplest version of a fully-connected model for text analysis is the following. After one-hot encoding the
+      titles, all of which are padded or truncated to a fixed length, <d-math>\texttt{seq\_len}</d-math>, each data
+      point is a <d-math>\texttt{seq\_len}\times \texttt{chars}</d-math> tensor, with <d-math>
+        \texttt{chars}</d-math> the number of unique characters used in the encoding (see <a target='_blank'
+        rel='noopener noreferrer' href='https://garrettgoon.com/arxiv-vixra-data/'>the Data post</a>) which can finally
+      be flattened into a vector<d-footnote id='tensor-conventions'>
+        There are various differences in the tensor/array conventions and terminology used in physics and ML. In
+        particular, what physicists would call a <d-math>D</d-math>-dimensional vector <d-math>\vec{v}</d-math> whose
+        components are <d-math>v_{i}</d-math> with a single index <d-math>i\in\{0,\ldots, D-1\}</d-math>, is often
+        represented to in ML circles as a <d-code language='python'>(1, D)</d-code>- or
+        <d-code language='python'>(D, 1)</d-code>-shaped tensor (in <d-code language='python'>numpy/pytorch</d-code>
+        language) with a singleton dimension explicitly noted, meaning that they are really tensors of
+        the form <d-math>v_{ij}</d-math> or <d-math>v_{ji}</d-math> with <d-math>i</d-math> as above and <d-math>
+          j\in\{0\}</d-math>, strictly speaking.
+        Tracking such information is important in ML for
+        broadcasting purposes and it takes a little time to get used to, if coming from the more concise physics
+        conventions.
+      </d-footnote>
+      <d-math>\vec{t}\in \mathbb{R}^{\texttt{seq\_len}\times \texttt{chars}}</d-math>. The
+      probability that a given paper title <d-math>\vec{t}</d-math> is from viXra can then be modeled by
+      <d-footnote id='other-conventions'>
+        Other conventions: <d-math>\cdot</d-math> is used both for matrix multiplication and dot products as in <d-math>
+          W\cdot \vec{x}</d-math> or <d-math>\vec{x}\cdot \vec{y}</d-math>, while <d-math>\ast</d-math> represents
+        element-wise multiplication, also known as the Hadamard product, <d-math>(A\ast B)_{ij}\equiv A_{ij}\times
+          B_{ij}</d-math>. ML would benefit from greater use of the Einstein summation convention (<a target='_blank'
+          rel='noopener noreferrer' href='https://pytorch.org/docs/stable/generated/torch.einsum.html'>implemented in
+          <d-code language='python'>pytorch</d-code> by <d-code language='python'>einsum</d-code>!
+        </a>) in which the usual summation symbol is left implicit in any tensor sums over indices, as the presence of
+        repeated indices already implies the existence of a sum: <d-math>\sum_{i,j}T_{abij}U_{cidje}\longrightarrow
+          T_{abij}U_{cidje}</d-math>. This is often (semi-)jokingly referred to as Einstein's greatest contribution to
+        physics, though the prevalence of Hadamard products in ML does make its use a bit more confusing in that context.
+      </d-footnote>
+    </p>
 
-    The viXra data is far more irregular, in nearly every sense:
-    <ul>
-      <li>
-        Many more duplicate title/abstract pairs exist on viXra.<d-footnote id='duplicates'>
-          There are multiple viXra examples in which the same paper was seemingly submitted in different years, such as
-          <a target='_blank' rel='noopener noreferrer' href='https://vixra.org/abs/1602.0117'>this 2016</a> and
-          <a target='_blank' rel='noopener noreferrer' href='https://vixra.org/abs/1705.0420'>this 2017</a> submission.
-          The arXiv data
-          is not free of similar issues, however: for whatever reason <a target='_blank' rel='noopener noreferrer'
-            href='https://arxiv.org/abs/1712.01655'>this (now-withdrawn, with comment) submission</a>
-          is an exact duplicate of <a target='_blank' rel='noopener noreferrer'
-            href='https://arxiv.org/abs/1703.04332'>this paper submitted earlier the same year.</a>
-        </d-footnote>
-      </li>
-      <li>
-        viXra papers were more likely to have very short or very long<d-footnote id='long-abstract'>
-          <a target='_blank' rel='noopener noreferrer' href='https://vixra.org/abs/1905.0204'>As in this extremely long
-            viXra abstract.</a> Some outliers were also
-          due to the web-scraping process in which the viXra titles and abstracts were taken directly from the paper's
-          landing page. For instance,
-          <a target='_blank' rel='noopener noreferrer' href='https://vixra.org/abs/1702.0311'>this article's
-            abstract</a> is listed simply as "1", but inspection of
-          the pdf source shows that a longer abstract does indeed exist.
+    <d-math block=''>
+      P(\vec{t}) = \sigma\left(\vec{W}\cdot\vec{t}+b\right) \ , \quad \sigma(x)\equiv \frac{1}{1+e^{-x}}
+    </d-math>
+    <p>
+      with <d-math>\sigma(x)</d-math> the usual sigmoid function. Above <d-math>\vec{W}\in
+        \mathbb{R}^{\texttt{seq\_len}\times \texttt{chars}}</d-math> is simply another vector (the weights) and <d-math>
+        b</d-math> is a constant (the bias), which are to be tuned by minimizing the cross-entropy loss, as usual.
+    </p>
 
-        </d-footnote> abstracts and titles.
-      </li>
-    </ul>
+    <p>
+      This model, known as logistic regression, can only pick up on technical data of the text, and not its semantics,
+      since it has no means for efficiently
+      learning about characters at different positions in the title. Nevertheless, it performs surprisingly (to me, at
+      least) well, achieving <d-math>\approx 70\%</d-math> accuracy on the validation set! The evolution of the
+      confusion matrix throughout training is
+      below.
+    </p>
 
-    viXra more irregular. Lengths. Technical chars. Smarandache.
+    <iframe
+      src="https://wandb.ai/garrett361/balanced_title_one_hot_linear/reports/Linear-Model-Confusion-Matrix--VmlldzoxMzU0ODM1"
+      style="border:none;height:1024px;width:100%"></iframe>
+
+    <p>
+      Because of the simplicity of the model, it is very easy to interpret. Every entry of <d-math>\vec{W}</d-math>
+      corresponds to a single character at a single position in the text. A positive weight indicates that having that
+      particular character at that specific position will push the prediction toward viXra, with the analogous result
+      for negative values and arXiv.
+    </p>
+
+    <p>
+      In the images below are the five most-positive and most-negative characters by weight for the last character in
+      all titles
+      (left image), for characters averaged over all possible locations in a title (middle image), and,
+      finally, characters in the first possible location in a title (right image). Since all titles were forced to be of
+      the
+      character length with spaces inserted on the left as padding, when necessary, the final character (which is
+      always non-trivial) should be much more important <d-footnote id='padding'>
+        Taking the mean over characters, I have also verified that the largest weights by magnitude
+        correspond to positions near the end of titles, meaning those are the most informative locations, as one would
+        expect.
+      </d-footnote> than the first character in each sequence (as it is often blank
+      padding), and this is clearly borne out.
+    </p>
 
 
-
-    <figure class='center'>
-      <img src='images/balanced_filtered_data_df_pairplot.png' alt='Corner plot of data statistics.'>
+    <figure style="grid-column-end: page-end">
+      <img src='images/last_char_weights.png' alt='' style='width: 30%'>
+      <img src='images/mean_position_weights.png' alt='' style='width: 29.3%'>
+      <img src='images/first_char_weights.png' alt='' style='width: 29.6%'>
       <figcaption>
-        Some of the statistical differences between arXiv (blue) and viXra (orange) data.
-        Data points are a randomly selected, equally balanced subsample of the combined dataset.
+        Values of the trained weight vector <d-math>\vec{W}</d-math> for various characters corresponding to the final
+        character (left), the mean over all character positions (middle), and for the first character (right). The three
+        signals are ordered by decreasing importance, as seen from their typical magnitudes.
+      </figcaption>
+    </figure>
+
+    <p>
+      The model has picked up on the fact that viXra papers are more likely to end with a period, exclamation point, or
+      other punctuation marks, while arXiv papers are more likely to end with some numerical value or a dollar-sign
+      (presumably due to <d-code language='python'>LaTeX</d-code> equation setting). Averaging over all positions, viXra
+      papers are more likely to have commas anywhere while most of the top arXiv markers are again associated with
+      <d-code language='python'>LaTeX</d-code>. These <d-code language='python'>LaTeX</d-code> signals will be a
+      persistent theme. The below images inspect these findings in further detail.
+    </p>
+
+
+    <figure style="grid-column-end: page-end">
+      <img src='images/mean_position_contains_dollar.png' alt='dollar latex examples'>
+      <figcaption>
+        Examples of titles which contain <d-math>\$</d-math> and the relevant conditional probabilities. Empirically, a
+        <d-math>\$</d-math> in a title indicates a <d-math>96\%</d-math> chance that the paper is arXiv, but only
+        <d-math>\mathcal{O}(5\%)</d-math> of all titles have a dollar-sign anywhere.
+      </figcaption>
+    </figure>
+
+    <figure style="grid-column-end: page-end">
+      <img src='images/fc_ends_with_bang.png' alt='dollar latex examples'>
+      <figcaption>
+        Examples of titles which end with <d-math>!</d-math> and the relevant conditional probabilities. Empirically, a
+        <d-math>!</d-math> ending a title indicates a <d-math>89\%</d-math> chance that the paper is viXra, but only
+        a tiny fraction of all papers end with an exclamation point.
+      </figcaption>
+    </figure>
+
+    <h3>
+      Random Forest
+    </h3>
+
+    <p>
+      I additionally trained a Random Forest<d-footnote id='rf'>
+        In brief, in a classifier context a Random Forest works by generating a large number of decision trees which
+        each attempt to optimally classify a randomly selected set of training datapoints by creating splits in the tree
+        based on some subset of all of the features in the data, the subset again randomly chosen for each tree. The
+        Random Forest then makes predictions on a new data
+        point by passing it through all of the collected trees and taking a majority vote (for binary classification).
+        The random selection of data points and features for each tree and the averaging procedure at inference time are
+        the key features which combat overfitting.
+      </d-footnote>, after performing some additional feature engineering, such as computing the frequency with which
+      various forms of punctuation appear in titles and the length of the title's longest word; see the figure below,
+      resulting in 65 total features.
+    </p>
+
+    <figure style='grid-column-end: page-end' id='rf-corner'>
+      <img src='images/rf_feature_engineering_corner_plot.png' alt='feature engineering for the random forest'>
+      <figcaption>
+        A corner plot of a few features used by the Random Forest. <d-code language='python'>mean_word_rank</d-code> is
+        the average rank of all words in each title, as computed from the ranks of how common each word is in the
+        training set.
       </figcaption>
     </figure>
 
 
-    <h3>Normalization</h3>
+    <p>
+      Sixty-five features is too many to be useful for a simple quick-and-dirty baseline. Apart from some quantitative
+      benchmarks, we also want a greater understanding of what features are <em>important</em> in distinguishing arXiv
+      papers from viXra, and most of the 65 are not.
+    </p>
+
+    <p>
+      There exist two common methods for quantifying the importance of different features in a Random Forest:
+    </p>
+
+    <ul>
+      <li>
+        <b>Gini-Impurity-Based Importance:</b> in <d-code language='python'>sklearn</d-code>, the default metric for
+        deciding where to
+        create the split-points in trees is based on Gini Impurity<d-footnote id='gini'>
+          The Gini Impurity of a set of data points belonging to <d-math>C</d-math> classes <d-math>c_i</d-math> is
+          given by the probability of misclassifying a randomly chosen data point when using a simple strategy in which
+          you
+          randomly guess which class the point belongs to in proportion to the relative class populations of the whole
+          set. That is, if <d-math>p_i</d-math> is the probability of drawing from class <d-math>c_i</d-math>, then the
+          impurity is given by <d-math>I_G = \sum_i P({\rm misclassify}|c_i)P(c_i) =\sum_i (1-p_i)p_i</d-math>. If the
+          data set only has elements from one class, then <d-math>I_G</d-math> is minimized at zero, while an
+          equally-balanced dataset has maximal <d-math>I_G</d-math>. A Random Forest strives to make splits such that
+          all examples which end up in a leaf of a tree belong to the same class, which is equivalent to minimizing
+          <d-math>I_G</d-math>.
+        </d-footnote> decrease. By creating a weighted average of the Gini Impurity decrease achieved by every split in
+        the tree per feature being split upon, one estimates the relative importance of all features. This is
+        implemented by the <a target='_blank' rel='noopener noreferrer'
+          href='https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier.feature_importances_'>
+          <d-code language='python'>feature_importances_</d-code>
+        </a>
+        method in <d-code language='python'>sklearn</d-code>.
+      </li>
+      <li>
+        <b>Permutation-Based Importance</b>: 
+      </li>
+    </ul>
+
+    <p>
+      <a target='_blank' rel='noopener noreferrer' href='https://explained.ai/rf-importance/index.html'>Post criticizing
+        gini importance</a>
+    </p>
 
 
+    <h3>
+      Performance on My Papers
+    </h3>
 
+    <p>
+      I, of course, have to check the model performance <a target='_blank' rel='noopener noreferrer'
+        href='https://inspirehep.net/literature?sort=mostrecent&size=25&page=1&q=a%20g%20goon&ui-citation-summary=true'>on
+        my own papers</a> (which are all arXiv), which I will do for each model in this series. The results aren't
+      great
+      for these baselines! Both models only classify half of my papers correctly. As seen in the figures below, there
+      is
+      a clear trend for longer titles to be predicted as arXiv and shorter ones as viXra, as expected from the above.
+    </p>
 
-    <h3>Cautionary Tale</h3>
+    <figure style='grid-column-end: page-end' id='logistic-preds'>
+      <img src='images/balanced_title_one_hot_linear_goon_papers_preds.png' alt='logistic preds'>
+      <figcaption>
+        Probabilities that each of my titles are viXra, as predicted by the linear model.
+      </figcaption>
+    </figure>
 
+    <figure style='grid-column-end: page-end' id='rf-preds'>
+      <img src='images/goon_papers_df_tree_pred_plot.png' alt='random forest predictions'>
+      <figcaption>
+        Probabilities that each of my titles are viXra, as predicted by the Random Forest, as estimated by computing the mean prediction over all trees in the forest.
+      </figcaption>
+    </figure>
 
-
-    <h3>Datasets</h3>
 
   </d-article>
 
