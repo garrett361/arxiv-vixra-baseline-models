@@ -337,14 +337,19 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
       <li>
         <b>Gini-Impurity-Based Importance:</b> in <d-code language='python'>sklearn</d-code>, the split-points in trees
         are determined by maximizing Gini Impurity<d-footnote id='gini'>
-          The Gini Impurity of a set of data points belonging to <d-math>C</d-math> classes <d-math>c_i</d-math> is
+          The Gini Impurity of a set of data points belonging to <d-math>C</d-math> classes, indexed by <d-math>i
+            \in\{0,\ldots, C-1\}</d-math>, is
           given by the probability of misclassifying a randomly chosen data point when using a simple strategy in
           which
           you
           randomly guess which class the point belongs to in proportion to the relative class populations of the whole
-          set. That is, if <d-math>p_i</d-math> is the probability of drawing from class <d-math>c_i</d-math>, then
+          set. That is, if <d-math>p_i</d-math> is the probability of drawing from class <d-math>i</d-math>, then
           the
-          impurity is given by <d-math>I_G = \sum_i P({\rm misclassify}|c_i)P(c_i) =\sum_i (1-p_i)p_i</d-math>. If the
+          impurity is given by
+          <d-math block=''>
+            I_G = \sum_i P({\rm misclassify}|c_i)P(c_i) =\sum_i (1-p_i)p_i\ .
+          </d-math>
+          If the
           data set only has elements from one class, then <d-math>I_G</d-math> is minimized at zero, while an
           equally-balanced dataset has maximal <d-math>I_G</d-math>. A Random Forest strives to make splits such that
           all examples which end up in a leaf of a tree belong to the same class, which is equivalent to minimizing
