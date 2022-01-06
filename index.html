@@ -191,8 +191,10 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
         link here)</a>.
     </p>
 
-    <iframe src="https://wandb.ai/garrett361/balanced_title_linear_one_hot/reports/Logistic-Regression-Confusion-Matrix--VmlldzoxMzg1NzE3" style="border:none;height:1024px;width:100%">
-      </iframe>
+    <iframe
+      src="https://wandb.ai/garrett361/balanced_title_linear_one_hot/reports/Logistic-Regression-Confusion-Matrix--VmlldzoxMzg1NzE3"
+      style="border:none;height:1024px;width:100%">
+    </iframe>
 
     <p>
       Because of the simplicity of the model, it is very easy to interpret. Every entry of <d-math>\vec{W}</d-math>
@@ -265,25 +267,29 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
     <p>
       Finally, logistic regression has picked up on the fact that viXra papers tend to be shorter than arXiv ones, as
       indicated by the fact that they typically have more left-padding by blank spaces when forced to be of length
-      <d-code language='python'>seq_len = 128</d-code>. The figure below shows the weights assigned to a blank space
-      for
-      each of the <d-code language='python'>128</d-code> possible character positions in a title (top-figure) as well
-      as
-      the cumulative sum of these weights for all points up to and including each such position (bottom-figure). In
-      the
-      cumulative plot there is a small trend towards arXiv in the positions <d-math>\sim 20-60</d-math> range which
-      then
-      strongly reverses and starts to favor viXra around positions <d-math>\sim 75</d-math> and beyond. These
-      inflection-points roughly correspond to the mean arXiv and viXra title lengths. As seen in the
-      next section, character length is one of the primary predictors for a title's origin.
+      <d-code language='python'>seq_len = 128</d-code>. In the figure below, the top plot shows the weights assigned to
+      blank space summed from position zero in the sequence up to the position marked on the horizontal axis. The sum
+      initially trends towards arXiv and flattens out position <d-math>\sim 60</d-math>
+      and then strongly reverses course towards viXra around positions <d-math>\sim 75</d-math> and beyond.
+      Correspondingly, titles whose non-trivial content starts somewhere before this latter dividing line have
+      accumulated a bias towards arXiv, while those which start after this point are weighted towards viXra. Not
+      coincidentally,
+      the scales of these inflection points coincide with the mean start positions for arXiv and viXra titles, as seen
+      in the vertical lines in the plot.
+      The bottom plot shows similar behavior for the average non-blank-space weights summed from the end of the sequence
+      to a given position.
+      In the next section, we will again see. character length is one of the primary predictors for a title's origin.
     </p>
 
     <figure style='grid-column-end: page-end' id='logistic-charlen'>
-      <img src='images/balanced_title_one_hot_linear_blank_weights_by_position.png'
+      <img src='images/balanced_title_linear_one_hot_cumulative_weights_by_position.png'
         alt='Weights for blank spaces, logistic regression.'>
       <figcaption>
-        Plots of the individual and cumulative weights for blank space by position. The average arXiv title starts
-        having non-trivial characters at the green line, while the average viXra title starts at the red.
+        Top plot: the cumulative sum of weights corresponding to all blank spaces, starting from position <d-code
+          language='python'>0</d-code>, described in more detail above. Bottom plot: the cumulative sum of the mean of
+        all non-blank-space weights, starting from position <d-code language='python'>128</d-code>. Since all titles end
+        with non-blank characters, the sum is non-informative towards the end of the sequence. As the title length
+        increases and one moves to the left of the plot, the sum increasingly indicates an arXiv paper.
       </figcaption>
     </figure>
 
