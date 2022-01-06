@@ -180,7 +180,7 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
     </p>
 
     <p>
-      This model, known as logistic regression, can only pick up on technical data in the text, and not its semantics,
+      This model, known as logistic regression, can only pick up on technical data in the text and not its semantics,
       since it has no means for efficiently
       learning about interactions between characters at different positions in the title. Nevertheless, it performs
       surprisingly well (to me, at
@@ -272,13 +272,16 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
       initially trends towards arXiv and flattens out position <d-math>\sim 60</d-math>
       and then strongly reverses course towards viXra around positions <d-math>\sim 75</d-math> and beyond.
       Correspondingly, titles whose non-trivial content starts somewhere before this latter dividing line have
-      accumulated a bias towards arXiv, while those which start after this point are weighted towards viXra. Not
+      accumulated a bias towards arXiv, while those which start somewhat after this point are weighted towards viXra.
+      Not
       coincidentally,
-      the scales of these inflection points coincide with the mean start positions for arXiv and viXra titles, as seen
-      in the vertical lines in the plot.
-      The bottom plot shows similar behavior for the average non-blank-space weights summed from the end of the sequence
+      the scales of these inflection points coincide with the mean start positions for arXiv and viXra titles, se the
+      vertical lines in the plot show.
+      The bottom plot demonstrates similar behavior for the average non-blank-space weights summed from the end of the
+      sequence
       to a given position.
-      In the next section, we will again see. character length is one of the primary predictors for a title's origin.
+      In the next section, we will again see that character length is one of the primary predictors for a title's
+      origin.
     </p>
 
     <figure style='grid-column-end: page-end' id='logistic-charlen'>
@@ -298,7 +301,7 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
     </h3>
 
     <p>
-      I additionally trained a Random Forest<d-footnote id='rf'>
+      I used a Random Forest<d-footnote id='rf'>
         In brief, a Random Forest classifier works by generating a large number of decision trees which are each trained
         using a
         randomly selected set of training examples and a randomly selected subset of data features. The conditions for
@@ -310,11 +313,14 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
         the data point settles in.
         The random selection of data points and features for each tree and the averaging procedure at inference time
         are the key features which decorrelate trees and combat variance.
-      </d-footnote>, after performing some additional feature engineering, such as computing the frequency with which
-      various forms of punctuation appear in titles and the length of the title's longest word resulting in 64 total
-      features. See the figure below for the data distributions along some particular engineered feature directions.
-      The ultimate model (which only uses ten of the 64 features, discussed below) also achieved <d-math>\approx 70\%
-      </d-math> accuracy on the validation set
+      </d-footnote> as a second baseline model. In order to facilitate training, I also
+      performed a modest amount of feature engineering such as computing the frequency with which
+      various forms of punctuation appear in titles and the length of the title's longest word, resulting in 64 total
+      features. See the figure below for the data distributions along some particular engineered feature-directions.
+      The ultimate model (which only uses ten of the 64 features, discussed below) achieved approximately the same
+      validation-set
+      performance as logistic regression: <d-math>\approx 70\%
+      </d-math> accuracy.
 
     </p>
 
@@ -330,7 +336,7 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
 
 
     <p>
-      Sixty-five features is too many to be useful for a simple quick-and-dirty baseline. Apart from some quantitative
+      Sixty-four features is too many to be useful for a simple quick-and-dirty baseline. Apart from some quantitative
       benchmarks, we also want a greater understanding of what features are <em>important</em> in distinguishing arXiv
       papers from viXra, and most of the 64 are not.
     </p>
@@ -362,20 +368,22 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
           <d-math>I_G</d-math>.
         </d-footnote> decrease by default. By creating a weighted average of the Gini Impurity decrease achieved by
         every split
-        in every tree per split-upon-feature, one estimates the relative importance of all features. <a target='_blank'
+        in every tree per split-upon-feature, one estimates the relative importance of all features.
+        <d-code language='python'>sklearn</d-code> implements this method via <a target='_blank'
           rel='noopener noreferrer'
           href='https://scikit-learn.org/stable/modules/generated/sklearn.ensemble.RandomForestClassifier.html#sklearn.ensemble.RandomForestClassifier.feature_importances_'>
           <d-code language='python'>feature_importances_</d-code>
-        </a> is the<d-code language='python'>sklearn</d-code> implementation of this method.
+        </a>.
       </li>
       <li>
         <b>Permutation-Based Importance</b>: a more computationally-expensive metric for assessing feature importance is
         to calculate the drop in performance which comes from randomly shuffling the values for a single feature in some
-        validation set, repeating this process for each feature. <a target='_blank' rel='noopener noreferrer'
+        validation set, repeating this process for each feature.
+        <d-code language='python'>sklearn</d-code> implements this method via <a target='_blank'
+          rel='noopener noreferrer'
           href='https://scikit-learn.org/stable/modules/generated/sklearn.inspection.permutation_importance.html#sklearn.inspection.permutation_importance'>
           <d-code language='python'>permutation_importance</d-code>
         </a>
-        is the <d-code language='python'>sklearn</d-code> implementation of this method.
       </li>
     </ul>
 
@@ -383,10 +391,12 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
       The Gini-Impurity-based method <a target='_blank' rel='noopener noreferrer'
         href='https://explained.ai/rf-importance/index.html'>has been criticized</a> as overestimating the importance of
       features which allow for many possible choices of split-points. As done in the preceding link, this effect can be
-      seen by adding a test-feature which consists solely of randomly generated numbers. Adding such a feature to the
+      seen by adding a test-feature which consists solely of randomly generated numbers drawn from a simple Gaussian.
+      Adding such a feature to the
       data and computing feature importances as above, the Gini method ranked this
       <d-code language='python'>random</d-code> feature as the 17th most-important feature, while permutation importance
-      ranked it dead-last: 65 of 65. See the plot of permutation-based importances below.
+      more-reasonably has it
+      ranked dead-last: 65 of 65. See the plot of permutation-based importances below.
     </p>
 
     <figure style='grid-column-end: page-end' id='perm-import-all'>
@@ -415,7 +425,7 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
     <figure style='grid-column-end: page-end' id='perm-import-all'>
       <img src='images/rf_1p_perm_import_plt.png' alt='plot of all permutation based importances'>
       <figcaption>
-        Permutation-based importances for the top-ten most important columns.
+        Permutation-based importances for the ten most-important columns.
       </figcaption>
     </figure>
 
@@ -468,7 +478,7 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
     <figure style='grid-column-end: page-end' id='logistic-preds'>
       <img src='images/balanced_title_one_hot_linear_goon_papers_preds.png' alt='logistic preds'>
       <figcaption>
-        Probabilities that each of my titles are viXra, as predicted by the linear model.
+        Probabilities that each of my titles are viXra, as predicted by the logistic regression model.
       </figcaption>
     </figure>
 
