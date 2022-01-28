@@ -112,7 +112,9 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
         <d-code language='python'>(D, 1)</d-code>-shaped tensor (in <d-code language='python'>numpy/pytorch</d-code>
         language) with a singleton dimension explicitly noted, meaning that they are really tensors of
         the form <d-math>v_{ij}</d-math> or <d-math>v_{ji}</d-math> with <d-math>i</d-math> as above and <d-math>
-          j\in\{0\}</d-math>, strictly speaking.
+          j\in\{0\}</d-math>, strictly speaking (vectors which truly only have a single index can also be created, and
+        are denoted as being
+        <d-code language='python'>(D, )</d-code>-shaped, but these other options seems to appear more frequently).
         Tracking such information is important in ML for
         broadcasting purposes and it takes a little time to get used to, if coming from the more concise physics
         conventions.
@@ -121,16 +123,16 @@ as with /static as their root. E.g. <img src="/diagrams/fig1.png">
       probability that a given paper title <d-math>\vec{t}</d-math> is from viXra is finally modeled by
       <d-footnote id='other-conventions'>
         Other conventions: <d-math>\cdot</d-math> is used both for matrix multiplication and dot products as in <d-math>
-          W\cdot \vec{x}</d-math> or <d-math>\vec{x}\cdot \vec{y}</d-math>, while <d-math>\ast</d-math> represents
-        element-wise multiplication, also known as the Hadamard product, <d-math>(A\ast B)_{ij}\equiv A_{ij}\times
+          W\cdot \vec{x}</d-math> or <d-math>\vec{x}\cdot \vec{y}</d-math>, while <d-math>*</d-math> represents
+        element-wise multiplication, also known as the Hadamard product, <d-math>(A* B)_{ij}\equiv A_{ij}\times
           B_{ij}</d-math>. ML would benefit from greater use of the Einstein summation convention (<a target='_blank'
           rel='noopener noreferrer' href='https://pytorch.org/docs/stable/generated/torch.einsum.html'>implemented in
           <d-code language='python'>pytorch</d-code> by <d-code language='python'>einsum</d-code>!
         </a>) in which the usual summation symbol is left implicit in any tensor sums over indices, as the presence of
         repeated indices already implies the existence of a sum: <d-math>\sum_{i,j}T_{abij}U_{cidje}\longrightarrow
           T_{abij}U_{cidje}</d-math>. This is often (semi-)jokingly referred to as Einstein's greatest contribution to
-        physics, though the prevalence of Hadamard products in ML does make its use a bit more confusing in that
-        context.
+        physics. The prevalence of Hadamard products in ML does make its use a bit more confusing in that
+        context, however.
       </d-footnote>
     </p>
 
